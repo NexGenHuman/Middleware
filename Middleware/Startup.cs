@@ -8,6 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
+using System.Text;
+using UAParser;
 
 namespace Middleware
 {
@@ -39,6 +42,23 @@ namespace Middleware
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
+            app.Use(async (context, next) => {
+                string uaString = context.Request.Headers["User-Agent"].ToString();
+                var uaParser = Parser.GetDefault();
+                ClientInfo c = uaParser.Parse(uaString);
+
+                string Browser = c.UserAgent.Family;
+                string[] blocked = { "Edge", "EdgeChromium", "IE" };
+
+                if (blocked.Contains(Browser))
+                {
+                    byte[] bytes = Encoding.ASCII.GetBytes("Przegl¹darka nie jest obs³ugiwana");
+                    await context.Response.Body.WriteAsync(bytes);
+                }
+                else
+                    await next();
+            });
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
